@@ -1,8 +1,9 @@
 # Python package-set extension that provides the FastMCP 4 / MCP SDK 2 stack
 # (protocol revision 2026-07-28) on nixpkgs revisions that do not ship it.
-# As of September 2026 nixpkgs packages fastmcp 3.x on top of mcp 1.x and has
-# no mcp-types at all; older pins (nixos-25.11, and unstable before mid-2026)
-# also lack httpx2/httpcore2 and py-key-value-aio, ship a starlette older than
+# As of October 2026 nixpkgs unstable packages fastmcp 3.x on top of mcp 2.x
+# with mcp-types in lockstep; older pins (nixos-25.11, and unstable before
+# mid-2026) ship mcp 1.x with no mcp-types at all, also lack
+# httpx2/httpcore2 and py-key-value-aio, ship a starlette older than
 # the 1.0.1 security floor (CVE-2026-48710, replaced together with
 # sse-starlette), and stable channels carry
 # griffelib/uncalled-for versions below what fastmcp-slim[server] needs.
@@ -46,7 +47,11 @@ let
   # Packages released in lockstep (mcp pins mcp-types to its exact version,
   # httpx2 and httpcore2 share one tag) are kept or replaced as a pair so a
   # vendored wheel is never combined with the consumer's copy of its twin.
-  keepMcp = satisfies "mcp" "2.0.0" "3.0.0" && satisfies "mcp-types" "2.0.0" "3.0.0";
+  # nixpkgs' mcp-types inherits version/src from `mcp` resolved through the
+  # final overlaid set, so its version cannot be inspected independently (it
+  # loops back into this overlay's own `mcp`). mcp pins mcp-types to its exact
+  # version, so decide the pair from `mcp` alone plus mcp-types' presence.
+  keepMcp = satisfies "mcp" "2.0.0" "3.0.0" && builtins.hasAttr "mcp-types" pyPrev;
   keepHttpx2 = satisfies "httpx2" "2.5.0" null && satisfies "httpcore2" "2.5.0" null;
   pair = keep: name: if keep then builtins.getAttr name pyPrev else own name;
   # nixpkgs derives fastmcp-slim's version and source from `fastmcp` in the

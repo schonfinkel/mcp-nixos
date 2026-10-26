@@ -226,9 +226,18 @@
               inherit (pkgs) lib;
               scoped = self.packages.${system}.mcp-nixos.pythonPackages.fastmcp.version;
               global = pkgs.python3Packages.fastmcp.version;
-              bare = import nixpkgs { inherit system; };
+              # nixpkgs' fastmcp propagates fastmcp-slim, which post-mcp-2
+              # unstable marks broken on newer Pythons. Downgrade that marker
+              # to a warning so fastmcp.drvPath stays forceable for the
+              # identity assert below; harmless (ignored) on older pins.
+              consumerConfig.problems.handlers.fastmcp-slim.broken = "warn";
+              bare = import nixpkgs {
+                inherit system;
+                config = consumerConfig;
+              };
               vanilla = import nixpkgs {
                 inherit system;
+                config = consumerConfig;
                 overlays = [ self.overlays.default ];
               };
               consumer = vanilla.mcp-nixos;
